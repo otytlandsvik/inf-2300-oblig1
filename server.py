@@ -39,7 +39,30 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         make additional methods to organize the flow with which a request is handled by
         this method. But it all starts here!
         """
+        req = self.rfile.readline().decode()
+        if req.split()[0] == 'GET':
+            self.handleGet()
+
+        
+
+    def handleGet(self):
+        """ Handle get request """
+        req = self.rfile.readline().decode()
+        if req.split()[1] == '/':
+            filename = "index.html"
+
+        # Open file
+        with open(filename, "rb") as f:
+            body = f.read()
+
+
         self.wfile.write(b"HTTP/1.1 200")
+
+    def finish(self):
+        """ Cleanup """
+
+
+
 
 
 if __name__ == "__main__":
