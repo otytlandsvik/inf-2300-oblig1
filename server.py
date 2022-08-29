@@ -11,6 +11,13 @@ UiT - The Arctic University of Norway
 May 9th, 2019
 """
 
+class Request():
+    def __init__(self):    
+        self.type = None
+        self.url = None
+        self.len = None
+        self.body = None
+
 class MyTCPHandler(socketserver.StreamRequestHandler):
     """
     This class is responsible for handling a request. The whole class is
@@ -40,33 +47,37 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         make additional methods to organize the flow with which a request is handled by
         this method. But it all starts here!
         """
-        req = self.rfile.readline().decode()
-        if req.split()[0] == 'GET':
+        # Read request
+        self.req = Request()
+        line = self.rfile.readline().decode().split()
+        self.req.type = line[0]
+        self.req.url = line[1]
+
+
+        if self.req.type == 'GET':
             self.handleGet()
 
         
 
     def handleGet(self):
         """ Handle get request """
-        req = self.rfile.readline().decode()
-        if req.split()[1] == '/':
+        if self.req.url == '/':
             filename = "index.html"
 
-        print(req.split())
 
-        # Open file
-        # with open(filename, "rb") as f:
-        #     body = f.read()
-        #     length = sys.getsizeof(body)
+        #Open file
+        with open(filename, "rb") as f:
+            body = f.read()
+            length = sys.getsizeof(body)
 
 
-        # # Write headers
-        # self.wfile.write(b"HTTP/1.1 200\r\n" +
-        #                 b"Content-Length: " + length + b("\r\n") +
-        #                 b"Content-Type: text/html\r\n\r\n")
+        # Write headers
+        self.wfile.write(b"HTTP/1.1 200\r\n" +
+                        b"Content-Length: " + bytes(length) + b"\r\n" +
+                        b"Content-Type: text/html\r\n\r\n")
 
-        # # Write body
-        # self.wfile.write(body)
+        # Write body
+        self.wfile.write(body)
 
     def finish(self):
         """ Cleanup """
