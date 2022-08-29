@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import socketserver
+import sys
 
 
 """
@@ -51,12 +52,21 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         if req.split()[1] == '/':
             filename = "index.html"
 
+        print(req.split())
+
         # Open file
-        with open(filename, "rb") as f:
-            body = f.read()
+        # with open(filename, "rb") as f:
+        #     body = f.read()
+        #     length = sys.getsizeof(body)
 
 
-        self.wfile.write(b"HTTP/1.1 200")
+        # # Write headers
+        # self.wfile.write(b"HTTP/1.1 200\r\n" +
+        #                 b"Content-Length: " + length + b("\r\n") +
+        #                 b"Content-Type: text/html\r\n\r\n")
+
+        # # Write body
+        # self.wfile.write(body)
 
     def finish(self):
         """ Cleanup """
