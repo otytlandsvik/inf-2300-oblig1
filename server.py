@@ -53,9 +53,15 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.req.type = line[0]
         self.req.url = line[1]
 
+        while line[0] != "":
+            if line[0] == "Content-Length":
+                self.req.len = int(line[1])
+
 
         if self.req.type == 'GET':
             self.handleGet()
+        elif self.req.type == 'POST':
+            self.handlePost()
 
         
 
@@ -78,6 +84,9 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         # Write body
         self.wfile.write(body)
+
+    def handlePost(self):
+        pass
 
     def finish(self):
         """ Cleanup """
