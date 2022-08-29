@@ -53,9 +53,13 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.req.type = line[0]
         self.req.url = line[1]
 
-        while line[0] != "":
-            if line[0] == "Content-Length":
+        while line:
+            print(line[0])
+            if line[0] == "Content-Length:":
                 self.req.len = int(line[1])
+            line = self.rfile.readline().decode().split()
+
+        print(self.req.len)
 
 
         if self.req.type == 'GET':
@@ -71,7 +75,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             filename = "index.html"
 
 
-        #Open file
+        # Read file
         with open(filename, "rb") as f:
             body = f.read()
             length = sys.getsizeof(body)
@@ -86,7 +90,28 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.wfile.write(body)
 
     def handlePost(self):
-        pass
+        """ Handle post request """
+
+        # Read body
+        self.req.body = self.rfile.read(self.req.len).decode()
+        print(self.req.body)
+
+        # Append body to text file
+        with open("test.txt", "a") as f:
+            f.write(self.req.body)
+
+        # Read text file for response
+        with open("test.txt", "rb") as f:
+            body = f.read()
+            length = sys.getsizeof(body)
+
+        # Write headers
+        self.wfile.write(b"HTTP/1.1 200\r\n" +
+                        b"Content-Length: " + bytes(length) + b"\r\n" +
+                        b"Content-Type: text/html\r\n\r\n")
+        
+        # Write body
+        self.wfile.write(body)
 
     def finish(self):
         """ Cleanup """
