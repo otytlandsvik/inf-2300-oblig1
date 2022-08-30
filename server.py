@@ -72,20 +72,19 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     def handleGet(self, req):
         """ Handle get request """
 
-        # Get target resource
-        if req["url"] == '/':
-            filename = "index.html"
-        else:
-            filename = req["url"]
-
-        if filename in blacklist:
+        # Check for forbidden requests
+        if req["url"] in blacklist:
+            self.retForbidden()
+            return
+        
+        if req["url"][:3] == "../":
             self.retForbidden()
             return
 
 
         # Read file
         try:
-            with open(filename, "rb") as f:
+            with open(req["url"], "rb") as f:
                 body = f.read()
                 length = str(len(body))
         except:
@@ -108,8 +107,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             return
 
         # Read body
-        len = int(req["Content-Length:"])
-        rbody = self.rfile.read(len).decode()
+        rlen = int(req["Content-Length:"])
+        rbody = self.rfile.read(rlen).decode()
         # Remove url encoding ("text=")
         rbody = urllib.parse.unquote_plus(rbody)[5:]
 
