@@ -88,21 +88,28 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
 
         # Read file
-        with open(filename, "rb") as f:
-            body = f.read()
-            length = sys.getsizeof(body)
+        try:
+            with open(filename, "rb") as f:
+                body = f.read()
+                length = sys.getsizeof(body)
+        except:
+            self.retNotFound()
+            return
 
 
-        # Write headers
+        # Write response
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length) + b"\r\n" +
-                        b"Content-Type: text/html\r\n\r\n")
+                        b"Content-Type: text/html\r\n\r\n" + body)
 
-        # Write body
-        self.wfile.write(body)
 
     def handlePost(self):
         """ Handle post request """
+
+        # Must post to test.txt
+        if not self.req.url[1:] == "test.txt":
+            self.retForbidden()
+            return
 
         # Read body
         self.req.body = self.rfile.read(self.req.len).decode()
@@ -110,7 +117,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.req.body = urllib.parse.unquote_plus(self.req.body)[5:]
 
         # Append body to text file
-        with open("test.txt", "a") as f:
+        with open(self.req.url, "a") as f:
             f.write(self.req.body)
 
         # Read text file for response
@@ -118,17 +125,32 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             body = f.read()
             length = sys.getsizeof(body)
 
-        # Write headers
+        # Write response
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length) + b"\r\n" +
-                        b"Content-Type: text/html\r\n\r\n")
+                        b"Content-Type: text/html\r\n\r\n" + body)
         
-        # Write body
-        self.wfile.write(body)
+        
 
     def retForbidden(self):
-        """ Return status forbidden to client """
-        self.wfile.write(b"HTTP/1.1 403 FORBIDDEN\r\n\r\n")
+        """ Return status 403 forbidden to client """
+        with open("forbidden.html", "rb") as f:
+            body = f.read()
+            length = sys.getsizeof(body)
+
+        self.wfile.write(b"HTTP/1.1 403 FORBIDDEN\r\n" +
+                        b"Content-Length: " + bytes(length) +
+                        b"Content-Type: text/html\r\n\r\n" + body)
+
+    def retNotFound(self):
+        """ Return status 404 not found to client """
+        with open("notFound.html", "rb") as f:
+            body = f.read()
+            length = sys.getsizeof(body)
+
+        self.wfile.write(b"HTTP/1.1 404 NOT FOUND\r\n" +
+                        b"Content-Length: " + bytes(length) +
+                        b"Content-Type: text/html\r\n\r\n" + body)
 
 
     def finish(self):
