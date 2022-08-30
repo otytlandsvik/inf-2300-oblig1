@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import socketserver
 import sys
+import urllib.parse
 
 
 """
@@ -10,6 +11,9 @@ Course: INF-2300 - Networking
 UiT - The Arctic University of Norway
 May 9th, 2019
 """
+
+# Resources that may not be returned to client
+blacklist = ["server.py", "test_client.py"]
 
 class Request():
     def __init__(self):    
@@ -54,12 +58,12 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.req.url = line[1]
 
         while line:
-            print(line[0])
+            #print(line[0])
             if line[0] == "Content-Length:":
                 self.req.len = int(line[1])
             line = self.rfile.readline().decode().split()
 
-        print(self.req.len)
+        #print(self.req.len)
 
 
         if self.req.type == 'GET':
@@ -71,8 +75,16 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
     def handleGet(self):
         """ Handle get request """
+
+        # Get target resource
         if self.req.url == '/':
             filename = "index.html"
+        else:
+            filename = self.req.url[1:]
+
+        if filename in blacklist:
+            self.retForbidden()
+            return
 
 
         # Read file
@@ -82,7 +94,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
 
         # Write headers
-        self.wfile.write(b"HTTP/1.1 200\r\n" +
+        self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length) + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n")
 
@@ -94,7 +106,8 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         # Read body
         self.req.body = self.rfile.read(self.req.len).decode()
-        print(self.req.body)
+        # Remove url encoding
+        self.req.body = urllib.parse.unquote_plus(self.req.body)[5:]
 
         # Append body to text file
         with open("test.txt", "a") as f:
@@ -106,12 +119,17 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             length = sys.getsizeof(body)
 
         # Write headers
-        self.wfile.write(b"HTTP/1.1 200\r\n" +
+        self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length) + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n")
         
         # Write body
         self.wfile.write(body)
+
+    def retForbidden(self):
+        """ Return status forbidden to client """
+        self.wfile.write(b"HTTP/1.1 403 FORBIDDEN\r\n\r\n")
+
 
     def finish(self):
         """ Cleanup """
