@@ -15,12 +15,6 @@ May 9th, 2019
 # Resources that may not be returned to client
 blacklist = ["server.py", "test_client.py"]
 
-class Request():
-    def __init__(self):    
-        self.type = None
-        self.url = None
-        self.len = None
-        self.body = None
 
 class MyTCPHandler(socketserver.StreamRequestHandler):
     """
@@ -52,35 +46,32 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         this method. But it all starts here!
         """
         # Read request
-        self.req = Request()
+        req = {}
         line = self.rfile.readline().decode().split()
-        self.req.type = line[0]
-        self.req.url = line[1]
+        req["type"] = line[0]
+        req["url"] = line[1]
 
         while line:
-            #print(line[0])
-            if line[0] == "Content-Length:":
-                self.req.len = int(line[1])
+            req[line[0]] = line[1]
             line = self.rfile.readline().decode().split()
 
-        #print(self.req.len)
 
 
-        if self.req.type == 'GET':
-            self.handleGet()
-        elif self.req.type == 'POST':
-            self.handlePost()
+        if req["type"] == 'GET':
+            self.handleGet(req)
+        elif req["type"] == 'POST':
+            self.handlePost(req)
 
         
 
-    def handleGet(self):
+    def handleGet(self, req):
         """ Handle get request """
 
         # Get target resource
-        if self.req.url == '/':
+        if req["url"] == '/':
             filename = "index.html"
         else:
-            filename = self.req.url[1:]
+            filename = req["url"][1:]
 
         if filename in blacklist:
             self.retForbidden()
@@ -103,32 +94,32 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                         b"Content-Type: text/html\r\n\r\n" + body)
 
 
-    def handlePost(self):
+    def handlePost(self, req):
         """ Handle post request """
 
         # Must post to test.txt
-        if not self.req.url[1:] == "test.txt":
+        if not req["url"][1:] == "test.txt":
             self.retForbidden()
             return
 
         # Read body
-        self.req.body = self.rfile.read(self.req.len).decode()
-        # Remove url encoding
-        self.req.body = urllib.parse.unquote_plus(self.req.body)[5:]
+        rbody = self.rfile.read(int(req["Content-Length:"])).decode()
+        # Remove url encoding ("text=")
+        rbody = urllib.parse.unquote_plus(rbody)[5:]
 
         # Append body to text file
-        with open(self.req.url, "a") as f:
-            f.write(self.req.body)
+        with open(req["url"][1:], "a") as f:
+            f.write(rbody)
 
         # Read text file for response
         with open("test.txt", "rb") as f:
-            body = f.read()
-            length = sys.getsizeof(body)
+            wbody = f.read()
+            length = sys.getsizeof(wbody)
 
         # Write response
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length) + b"\r\n" +
-                        b"Content-Type: text/html\r\n\r\n" + body)
+                        b"Content-Type: text/html\r\n\r\n" + wbody)
         
         
 
