@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import socketserver
-import sys
 import urllib.parse
 
 
@@ -45,11 +44,17 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         make additional methods to organize the flow with which a request is handled by
         this method. But it all starts here!
         """
-        # Read request
+        # Read request headers
         req = {}
         line = self.rfile.readline().decode().split()
         req["type"] = line[0]
         req["url"] = line[1]
+
+        # Remove initial '/' from url
+        if req["url"] == '/':
+            req["url"] = "index.html"
+        elif req["url"][:1] == '/':
+            req["url"] = req["url"][1:]
 
         while line:
             req[line[0]] = line[1]
@@ -71,7 +76,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         if req["url"] == '/':
             filename = "index.html"
         else:
-            filename = req["url"][1:]
+            filename = req["url"]
 
         if filename in blacklist:
             self.retForbidden()
@@ -82,7 +87,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         try:
             with open(filename, "rb") as f:
                 body = f.read()
-                length = sys.getsizeof(body)
+                length = str(len(body))
         except:
             self.retNotFound()
             return
@@ -90,7 +95,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         # Write response
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
-                        b"Content-Length: " + bytes(length) + b"\r\n" +
+                        b"Content-Length: " + bytes(length,'utf8') + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n" + body)
 
 
@@ -98,27 +103,28 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         """ Handle post request """
 
         # Must post to test.txt
-        if not req["url"][1:] == "test.txt":
+        if not req["url"] == "test.txt":
             self.retForbidden()
             return
 
         # Read body
-        rbody = self.rfile.read(int(req["Content-Length:"])).decode()
+        len = int(req["Content-Length:"])
+        rbody = self.rfile.read(len).decode()
         # Remove url encoding ("text=")
         rbody = urllib.parse.unquote_plus(rbody)[5:]
 
         # Append body to text file
-        with open(req["url"][1:], "a") as f:
+        with open(req["url"], "a") as f:
             f.write(rbody)
 
         # Read text file for response
         with open("test.txt", "rb") as f:
             wbody = f.read()
-            length = sys.getsizeof(wbody)
+            length = str(len(wbody))
 
         # Write response
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
-                        b"Content-Length: " + bytes(length) + b"\r\n" +
+                        b"Content-Length: " + bytes(length,'utf8') + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n" + wbody)
         
         
@@ -127,20 +133,20 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         """ Return status 403 forbidden to client """
         with open("forbidden.html", "rb") as f:
             body = f.read()
-            length = sys.getsizeof(body)
+            length = str(len(body))
 
         self.wfile.write(b"HTTP/1.1 403 FORBIDDEN\r\n" +
-                        b"Content-Length: " + bytes(length) +
+                        b"Content-Length: " + bytes(length,'utf8') + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n" + body)
 
     def retNotFound(self):
         """ Return status 404 not found to client """
         with open("notFound.html", "rb") as f:
             body = f.read()
-            length = sys.getsizeof(body)
+            length = str(len(body))
 
         self.wfile.write(b"HTTP/1.1 404 NOT FOUND\r\n" +
-                        b"Content-Length: " + bytes(length) +
+                        b"Content-Length: " + bytes(length,'utf8') + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n" + body)
 
 
