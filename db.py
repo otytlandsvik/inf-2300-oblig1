@@ -6,6 +6,32 @@ created for storing messages.
 import sqlite3
 
 class Database():
-    def __init__(self, name):
-        self.con = sqlite3.connect(name)
+    def __init__(self, dbname, tname):
+        """
+        Connects to database dbname and uses tname
+        to run future queries
+        """
+        self.con = sqlite3.connect(dbname)
+        self.cur = self.con.cursor()
+        self.tname = tname;
+
+    def get(self):
+        """ 
+        Run get query on restful API.
+        Will obtain all messages in database        
+        """
+        q = "SELECT * FROM " + self.tname
+        self.cur.execute(q)
+        return self.cur.fetchall()
+
+    def put(self, msg):
+        """ Put given msg in database """
+        q = "INSERT INTO " + self.tname + " \"" + msg + "\""
+        self.cur.execute(q)
+
+
+if __name__ == "__main__":
+    db = Database("messages.db", "messages")
+
+    print(db.get())
 
