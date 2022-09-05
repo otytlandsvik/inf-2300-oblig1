@@ -47,6 +47,16 @@ class Database():
         q = "DELETE FROM " + self.tname + " WHERE ID = " + str(id)
         self.cur.execute(q)
         self.con.commit()
+    
+    def exists(self, id):
+        """ Check whether given id exists in database """
+        q = "SELECT ID FROM " + self.tname + " WHERE ID = " + str(id)
+        self.cur.execute(q)
+        row = self.cur.fetchone()
+        if not row == None:
+            return True
+        else:
+            return False
 
 
 if __name__ == "__main__":
@@ -55,6 +65,7 @@ if __name__ == "__main__":
     # db.post("test")
     # db.put(1, "new message")
     # db.delete(2)
-    print(db.getid("test"))
+    # print(db.getid("test"))
+    # print(db.exists(9))
     print(db.get())
 

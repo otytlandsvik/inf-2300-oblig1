@@ -71,6 +71,10 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             self.handleGet(req)
         elif req["type"] == 'POST':
             self.handlePost(req)
+        elif req["type"] == 'PUT' and req["url"] == 'messages':
+            self.RESTput(req)
+        elif req["type"] == 'DELETE' and req["url"] == 'messages':
+            self.RESTdelete(req)
 
         
 
@@ -198,13 +202,40 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         rbody = self.rfile.read(rlen).decode()
         obj = json.loads(rbody)
 
-        # Return error on no id
-        if not "id" in obj:
+        # Return error on invalid input
+        if not "id" in obj or not "text" in obj:
             self.wfile.write(b"HTTP/1.1 400 BAD REQUEST\r\n\r\n")
             return
         
         # Update message
         database.put(obj["id"], obj["text"])
+
+        # Return success
+        self.wfile.write(b"HTTP/1.1 200 OK\r\n\r\n")
+
+    def RESTdelete(self, req):
+        """ Delete message with given id """
+
+        # Read request body
+        rlen = int(req["Content-Length:"])
+        rbody = self.rfile.read(rlen).decode()
+        obj = json.loads(rbody)
+
+        # Return error on no id
+        if not "id" in obj:
+            self.wfile.write(b"HTTP/1.1 400 BAD REQUEST\r\n\r\n")
+            return
+
+        # Return error if message does not exist
+        if not database.exists(obj["id"]):
+            self.wfile.write(b"HTTP/1.1 404 NOT FOUND\r\n\r\n")
+            return
+        
+        # Delete message
+        database.delete(obj["id"])
+
+        # Return success
+        self.wfile.write(b"HTTP/1.1 200 OK\r\n\r\n")
 
     def retForbidden(self):
         """ Return status 403 forbidden to client """
@@ -226,9 +257,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
                         b"Content-Length: " + bytes(length,'utf8') + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n" + body)
 
-
-    def finish(self):
-        """ Cleanup """
 
 
 
