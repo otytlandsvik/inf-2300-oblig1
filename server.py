@@ -138,12 +138,29 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
     def RESTget(self):
         """ Get all messages and return them """
-        body = json.dumps(database.get())
+        data = database.get()
+        # Apply correct formatting
+        list = []
+        for p in data:
+            list.append({"id":p[0], "text":p[1]})
+        body = json.dumps(list)
+
         length = str(len(body))
 
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length, 'utf8') + b"\r\n" +
                         b"Content-Type: application/json\r\n\r\n" + bytes(body, 'utf8'))
+
+    def RESTpost(self, req):
+        """ Insert a new message into database """
+
+        # Read request body
+        rlen = int(req["Content-Length:"])
+        rbody = self.rfile.read(rlen).decode()
+        obj = json.loads(rbody)
+
+        # Return error on no message
+        # if not obj["message"]
         
 
     def retForbidden(self):
