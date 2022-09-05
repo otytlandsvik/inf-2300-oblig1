@@ -77,6 +77,12 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
     def handleGet(self, req):
         """ Handle get request """
 
+
+        # Handle request to REST API
+        if req["url"] == "messages":
+            self.RESTget()
+            return
+
         # Check for forbidden requests
         if req["url"] in blacklist:
             self.retForbidden()
@@ -86,10 +92,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             self.retForbidden()
             return
 
-        # Handle request to REST API
-        if req["url"] == "messages":
-            self.RESTget()
-            return
 
 
         # Read file
@@ -110,6 +112,11 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
     def handlePost(self, req):
         """ Handle post request """
+
+        # Handle request to REST API
+        if req["url"] == "messages":
+            self.RESTpost(req)
+            return
 
         # Must post to test.txt
         if not req["url"] == "test.txt":
@@ -147,6 +154,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
         length = str(len(body))
 
+        # Write response
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length, 'utf8') + b"\r\n" +
                         b"Content-Type: application/json\r\n\r\n" + bytes(body, 'utf8'))
@@ -160,8 +168,43 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         obj = json.loads(rbody)
 
         # Return error on no message
-        # if not obj["message"]
+        if not "text" in obj:
+            self.wfile.write(b"HTTP/1.1 400 BAD REQUEST\r\n\r\n")
+            return
+
+        # Insert message into database
+        msg = obj["text"]
+        database.post(msg)
+
+        # Get ID in database
+        data = database.getid(msg)
+        # Make sure it is the last added if identicals exist
+        ID = data[-1]
+
+        # Write object to return
+        body = json.dumps({"id":ID, "text":msg})
+        length = str(len(body))
+
+        # Return success
+        self.wfile.write(b"HTTP/1.1 201 CREATED\r\n" +
+                        b"Content-Length: " + bytes(length, 'utf8') + b"\r\n" +
+                        b"Content-Type: application/json\r\n\r\n" + bytes(body, 'utf8'))
+
+    def RESTput(self, req):
+        """ Update a message already in the database with a new value """
+
+        # Read request body
+        rlen = int(req["Content-Length:"])
+        rbody = self.rfile.read(rlen).decode()
+        obj = json.loads(rbody)
+
+        # Return error on no id
+        if not "id" in obj:
+            self.wfile.write(b"HTTP/1.1 400 BAD REQUEST\r\n\r\n")
+            return
         
+        # Update message
+        database.put(obj["id"], obj["text"])
 
     def retForbidden(self):
         """ Return status 403 forbidden to client """

@@ -29,6 +29,12 @@ class Database():
         q = "INSERT INTO " + self.tname + " (msg) VALUES (\'" + msg + "\')"
         self.cur.execute(q)
         self.con.commit()
+    
+    def getid(self, msg):
+        """ Get ID of given message """
+        q = "SELECT ID FROM " + self.tname + " WHERE msg = \'" + msg + "\' ORDER BY ID"
+        self.cur.execute(q)
+        return self.cur.fetchall()
 
     def put(self, id, msg):
         """ Alter existing message """
@@ -49,5 +55,6 @@ if __name__ == "__main__":
     # db.post("test")
     # db.put(1, "new message")
     # db.delete(2)
+    print(db.getid("test"))
     print(db.get())
 
