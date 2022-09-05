@@ -24,14 +24,30 @@ class Database():
         self.cur.execute(q)
         return self.cur.fetchall()
 
-    def put(self, msg):
-        """ Put given msg in database """
-        q = "INSERT INTO " + self.tname + " \"" + msg + "\""
+    def post(self, msg):
+        """ Create new message in database """
+        q = "INSERT INTO " + self.tname + " (msg) VALUES (\'" + msg + "\')"
         self.cur.execute(q)
+        self.con.commit()
+
+    def put(self, id, msg):
+        """ Alter existing message """
+        q = "UPDATE " + self.tname + " SET msg = \'" + msg + "\' WHERE ID = " + str(id)
+        self.cur.execute(q)
+        self.con.commit()
+
+    def delete(self, id):
+        """ Delete message with given id """
+        q = "DELETE FROM " + self.tname + " WHERE ID = " + str(id)
+        self.cur.execute(q)
+        self.con.commit()
 
 
 if __name__ == "__main__":
     db = Database("messages.db", "messages")
 
+    # db.post("test")
+    # db.put(1, "new message")
+    # db.delete(2)
     print(db.get())
 
