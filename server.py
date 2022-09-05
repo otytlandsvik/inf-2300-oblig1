@@ -2,6 +2,7 @@
 import socketserver
 import urllib.parse
 import db
+import json
 
 
 """
@@ -14,6 +15,9 @@ May 9th, 2019
 
 # Resources that may not be returned to client
 blacklist = ["server.py", "test_client.py"]
+
+# Database for REST API
+database = db.Database("messages.db", "messages")
 
 
 class MyTCPHandler(socketserver.StreamRequestHandler):
@@ -82,6 +86,11 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             self.retForbidden()
             return
 
+        # Handle request to REST API
+        if req["url"] == "messages":
+            self.RESTget()
+            return
+
 
         # Read file
         try:
@@ -126,7 +135,15 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
         self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
                         b"Content-Length: " + bytes(length,'utf8') + b"\r\n" +
                         b"Content-Type: text/html\r\n\r\n" + wbody)
-        
+
+    def RESTget(self):
+        """ Get all messages and return them """
+        body = json.dumps(database.get())
+        length = str(len(body))
+
+        self.wfile.write(b"HTTP/1.1 200 OK\r\n" +
+                        b"Content-Length: " + bytes(length, 'utf8') + b"\r\n" +
+                        b"Content-Type: application/json\r\n\r\n" + bytes(body, 'utf8'))
         
 
     def retForbidden(self):
