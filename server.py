@@ -65,8 +65,7 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
             req[line[0]] = line[1]
             line = self.rfile.readline().decode().split()
 
-
-
+        # Go to correct method handler
         if req["type"] == 'GET':
             self.handleGet(req)
         elif req["type"] == 'POST':
@@ -80,7 +79,6 @@ class MyTCPHandler(socketserver.StreamRequestHandler):
 
     def handleGet(self, req):
         """ Handle get request """
-
 
         # Handle request to REST API
         if req["url"] == "messages":
